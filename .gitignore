@@ -1,0 +1,26 @@
+# ─── Hardhat ────────────────────────────────────
+node_modules/
+cache/
+artifacts/
+typechain-types/
+coverage/
+coverage.json
+
+# ─── Frontend ───────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env*.local
+
+# ─── Environment ────────────────────────────────
+.env
+.env.local
+.env.*
+
+# ─── OS / Editor ────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
