@@ -2,7 +2,30 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
-import { CHAIN_ID, RPC_URL } from "@/lib/contractConfig";
+import {
+  BLOCK_EXPLORER_URL,
+  CHAIN_ID,
+  CHAIN_ID_HEX,
+  CURRENCY_SYMBOL,
+  NETWORK_NAME,
+  RPC_URL,
+} from "@/lib/contractConfig";
+
+declare global {
+  interface Window {
+    ethereum?: {
+      on: (event: string, listener: (...args: any[]) => void) => void;
+      removeListener: (
+        event: string,
+        listener: (...args: any[]) => void
+      ) => void;
+      request: (args: {
+        method: string;
+        params?: unknown[] | Record<string, unknown>;
+      }) => Promise<unknown>;
+    };
+  }
+}
 
 export interface WalletState {
   address: string | null;
@@ -30,6 +53,8 @@ export function useWallet() {
     return Number(network.chainId) === CHAIN_ID;
   }, []);
 
+  const networkErrorMessage = `Please switch to ${NETWORK_NAME} (chainId: ${CHAIN_ID}, RPC: ${RPC_URL})`;
+
   const connect = useCallback(async () => {
     if (typeof window === "undefined" || !window.ethereum) {
       setState((s) => ({ ...s, error: "MetaMask not detected. Please install MetaMask." }));
@@ -48,9 +73,7 @@ export function useWallet() {
         isConnected: true,
         isCorrectNetwork,
         isConnecting: false,
-        error: isCorrectNetwork
-          ? null
-          : `Please switch to Hardhat Local network (chainId: ${CHAIN_ID}, RPC: ${RPC_URL})`,
+        error: isCorrectNetwork ? null : networkErrorMessage,
         provider,
         signer,
       });
@@ -58,7 +81,60 @@ export function useWallet() {
       const message = err instanceof Error ? err.message : "Failed to connect wallet";
       setState((s) => ({ ...s, isConnecting: false, error: message }));
     }
-  }, [checkNetwork]);
+  }, [checkNetwork, networkErrorMessage]);
+
+  const switchNetwork = useCallback(async () => {
+    if (typeof window === "undefined" || !window.ethereum) {
+      setState((s) => ({
+        ...s,
+        error: "MetaMask not detected. Please install MetaMask.",
+      }));
+      return;
+    }
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: CHAIN_ID_HEX }],
+      });
+    } catch (err: unknown) {
+      const code =
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        typeof err.code === "number"
+          ? err.code
+          : undefined;
+
+      if (code !== 4902) {
+        const message =
+          err instanceof Error ? err.message : "Failed to switch network";
+        setState((s) => ({ ...s, error: message }));
+        return;
+      }
+
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [
+          {
+            chainId: CHAIN_ID_HEX,
+            chainName: NETWORK_NAME,
+            nativeCurrency: {
+              name: "Ether",
+              symbol: CURRENCY_SYMBOL,
+              decimals: 18,
+            },
+            rpcUrls: [RPC_URL],
+            ...(BLOCK_EXPLORER_URL
+              ? { blockExplorerUrls: [BLOCK_EXPLORER_URL] }
+              : {}),
+          },
+        ],
+      });
+    }
+
+    await connect();
+  }, [connect]);
 
   const disconnect = useCallback(() => {
     setState({
@@ -92,5 +168,5 @@ export function useWallet() {
     };
   }, [disconnect]);
 
-  return { ...state, connect, disconnect };
+  return { ...state, connect, disconnect, switchNetwork };
 }

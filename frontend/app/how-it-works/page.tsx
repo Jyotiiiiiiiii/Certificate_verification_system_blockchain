@@ -1,12 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { NETWORK_NAME } from "@/lib/contractConfig";
 
 const sections = [
   {
     title: "What is Blockchain Certificate Verification?",
     content: `Traditional certificates are stored in centralized databases or
-issued on paper — both are vulnerable to forgery, data loss, or
+issued on paper, both of which are vulnerable to forgery, data loss, or
 institutional failure. Blockchain certificate verification records
 a unique fingerprint of each certificate on a decentralized ledger
 that nobody can alter.`,
@@ -14,24 +15,25 @@ that nobody can alter.`,
   {
     title: "How Certify Uses Smart Contracts",
     content: `Certify deploys a Solidity smart contract called
-CertificateRegistry on an Ethereum-compatible network (Hardhat
-locally). When an admin issues a certificate, the contract stores
-the recipient's details and a cryptographic hash on-chain. No one
-— not even the admin — can edit or delete that record.`,
+CertificateRegistry on an Ethereum-compatible network. This project
+targets ${NETWORK_NAME} for public deployment and Hardhat for local development.
+When an admin issues a certificate, the contract stores the recipient's
+details and a cryptographic hash on-chain. No one can edit or delete
+that record afterward.`,
   },
   {
     title: "The Cryptographic Hash",
     content: `Every certificate has a unique SHA-3 (keccak256) hash generated
 from its fields. Think of it as the certificate's DNA. If even one
-character changes, the hash changes completely — instantly
+character changes, the hash changes completely, instantly
 revealing tampering when you re-compute and compare it.`,
   },
   {
-    title: "Gas & Network",
-    content: `Issuing a certificate costs a small gas fee (payable in ETH).
-Verifying is completely free because it only reads data — no
-transaction needed. In production you would connect to a public
-testnet or mainnet; locally we use Hardhat's built-in accounts.`,
+    title: "Gas and Network",
+    content: `Issuing a certificate costs a small gas fee payable in ETH.
+Verifying is completely free because it only reads data and sends no
+transaction. This setup is ready for ${NETWORK_NAME} as a public testnet,
+while local development still works with Hardhat's built-in accounts.`,
   },
 ];
 
@@ -39,20 +41,17 @@ const steps = [
   {
     step: "Step 1",
     title: "Admin issues a certificate",
-    desc: "Connect MetaMask → Fill the form → Submit. The smart contract stores the data and emits a CertificateIssued event.",
-    icon: "📝",
+    desc: "Connect MetaMask, fill the form, and submit. The smart contract stores the data and emits a CertificateIssued event.",
   },
   {
     step: "Step 2",
     title: "Blockchain records it permanently",
-    desc: "The Ethereum node mines a block containing the state change. The certificate becomes immutable.",
-    icon: "⛓️",
+    desc: "The network confirms the transaction and the certificate becomes part of immutable on-chain state.",
   },
   {
     step: "Step 3",
     title: "Anyone verifies in seconds",
-    desc: "Paste the certificate ID (or scan the QR code). The app reads directly from the chain — no intermediaries.",
-    icon: "✅",
+    desc: "Paste the certificate ID or scan the QR code. The app reads directly from the chain without intermediaries.",
   },
 ];
 
@@ -72,12 +71,11 @@ export default function HowItWorksPage() {
           How It Works
         </h1>
         <p className="text-stone-500 text-base leading-relaxed">
-          A plain-language explanation of blockchain certificate
-          verification — how Certify works under the hood.
+          A plain-language explanation of blockchain certificate verification
+          and how Certify works under the hood.
         </p>
       </motion.div>
 
-      {/* Step-by-step flow */}
       <div className="mt-14 grid md:grid-cols-3 gap-5 mb-16">
         {steps.map((s, i) => (
           <motion.div
@@ -88,7 +86,6 @@ export default function HowItWorksPage() {
             transition={{ duration: 0.4, delay: i * 0.1 }}
             className="card-hover p-6"
           >
-            <span className="text-3xl mb-4 block">{s.icon}</span>
             <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-1">
               {s.step}
             </p>
@@ -98,7 +95,6 @@ export default function HowItWorksPage() {
         ))}
       </div>
 
-      {/* Deep-dive sections */}
       <div className="max-w-2xl space-y-10">
         {sections.map((sec, i) => (
           <motion.div
@@ -118,7 +114,6 @@ export default function HowItWorksPage() {
         ))}
       </div>
 
-      {/* Tech stack */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -133,7 +128,7 @@ export default function HowItWorksPage() {
           {[
             ["Smart Contract", "Solidity 0.8.24"],
             ["Access Control", "OpenZeppelin Ownable"],
-            ["Local Blockchain", "Hardhat + ethers.js v6"],
+            ["Blockchain Dev", "Hardhat + ethers.js v6"],
             ["Frontend", "Next.js 14 (App Router)"],
             ["Styling", "Tailwind CSS"],
             ["Animations", "Framer Motion"],

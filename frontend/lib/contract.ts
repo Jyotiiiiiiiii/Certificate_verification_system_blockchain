@@ -1,6 +1,9 @@
 import { ethers } from "ethers";
 import CertificateRegistryABI from "@/lib/abi";
-import { CONTRACT_ADDRESS } from "@/lib/contractConfig";
+import {
+  CONTRACT_ADDRESS,
+  CONTRACT_CONFIG_ERROR,
+} from "@/lib/contractConfig";
 
 export interface CertificateData {
   certificateId: string;
@@ -16,6 +19,7 @@ export interface CertificateData {
  * Returns a read-only contract instance (no signer needed).
  */
 export function getReadContract(provider: ethers.Provider) {
+  assertContractConfig();
   return new ethers.Contract(CONTRACT_ADDRESS, CertificateRegistryABI, provider);
 }
 
@@ -23,7 +27,20 @@ export function getReadContract(provider: ethers.Provider) {
  * Returns a write-capable contract instance (signer required).
  */
 export function getWriteContract(signer: ethers.Signer) {
+  assertContractConfig();
   return new ethers.Contract(CONTRACT_ADDRESS, CertificateRegistryABI, signer);
+}
+
+function assertContractConfig() {
+  if (CONTRACT_CONFIG_ERROR) {
+    throw new Error(CONTRACT_CONFIG_ERROR);
+  }
+
+  if (!ethers.isAddress(CONTRACT_ADDRESS)) {
+    throw new Error(
+      `NEXT_PUBLIC_CONTRACT_ADDRESS is invalid: ${CONTRACT_ADDRESS}`
+    );
+  }
 }
 
 /**

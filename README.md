@@ -1,197 +1,176 @@
-# Certify — Blockchain Certificate Verification System
+# Certify
 
-> Tamper-proof digital certificate issuance and verification powered by Ethereum smart contracts.
+Tamper-proof digital certificate issuance and verification powered by Ethereum smart contracts.
 
-## 📁 Project Structure
+## Architecture
 
-```
-Certify/
-├── contracts/
-│   └── CertificateRegistry.sol   # Solidity smart contract
-├── scripts/
-│   └── deploy.js                 # Hardhat deployment script
-├── test/
-│   └── CertificateRegistry.test.js
-├── hardhat.config.js
-├── package.json                  # Hardhat dependencies
-└── frontend/
-    ├── app/
-    │   ├── page.tsx              # Landing page
-    │   ├── issue/page.tsx        # Issue certificate (admin)
-    │   ├── verify/page.tsx       # Verify certificate (public)
-    │   └── how-it-works/page.tsx
-    ├── components/
-    │   ├── Navbar.tsx
-    │   ├── Footer.tsx
-    │   └── CertificateCard.tsx
-    ├── lib/
-    │   ├── abi.ts                # Contract ABI
-    │   ├── contract.ts           # Web3 helper functions
-    │   ├── contractConfig.ts     # Address + chain config
-    │   └── useWallet.ts          # MetaMask hook
-    └── package.json              # Frontend dependencies
-```
+This project has two parts:
 
----
+1. `contracts/`, `scripts/`, `test/`
+   Hardhat project for compiling, testing, and deploying the `CertificateRegistry` smart contract.
+2. `frontend/`
+   Next.js 14 app that lets an admin issue certificates through MetaMask and lets anyone verify a certificate by ID.
 
-## 🚀 Quick Start
+## What The Contract Does
 
-### Prerequisites
+`contracts/CertificateRegistry.sol` stores certificates on-chain by `certificateId`.
 
-- **Node.js** ≥ 18
-- **MetaMask** browser extension installed
-- A terminal (PowerShell works fine on Windows)
+- `issueCertificate(...)`
+  Only the contract owner can issue a certificate.
+- `verifyCertificate(certificateId)`
+  Anyone can read the full certificate data.
+- `revokeCertificate(certificateId)`
+  Only the owner can mark a certificate as invalid.
+- `certificateExists(certificateId)`
+  Quick existence check used by the frontend.
 
----
+Each certificate stores:
 
-## Step 1 — Install Hardhat dependencies
+- certificate ID
+- recipient name
+- course name
+- issuer
+- issue timestamp
+- certificate hash
+- validity flag
 
-```powershell
-cd "C:\Users\jyoti\OneDrive\Desktop\Certify"
-npm install
-```
+## What The Frontend Does
 
----
+The frontend uses `ethers.js` and MetaMask:
 
-## Step 2 — Compile the smart contract
+- `/issue`
+  Connects a wallet and sends `issueCertificate(...)` transactions.
+- `/verify`
+  Reads contract data from a public RPC endpoint without requiring a wallet.
+- `/how-it-works`
+  Explains the flow and architecture.
 
-```powershell
-npx hardhat compile
-```
+The frontend is now environment-driven:
 
-You should see:
-```
-Compiled 1 Solidity file successfully
-```
+- local development defaults to Hardhat localhost
+- production defaults to Sepolia-friendly network settings
+- deployed contract address must be provided through `NEXT_PUBLIC_CONTRACT_ADDRESS`
 
----
+## Local Development
 
-## Step 3 — Run tests
+From the project root:
 
 ```powershell
-npx hardhat test
+cmd /c npm install
+cmd /c npm test
 ```
 
-Expected output: **4 passing** tests (issue, duplicate prevention, verification, revocation).
-
----
-
-## Step 4 — Start local Hardhat node
-
-Open a **new terminal window** and keep it running:
+Run a local chain:
 
 ```powershell
-npx hardhat node
+cmd /c npm run node
 ```
 
-This starts a local Ethereum node at `http://127.0.0.1:8545` and prints 20 funded test accounts.
-
----
-
-## Step 5 — Deploy the contract
-
-In your **original terminal**:
+In a second terminal, deploy locally:
 
 ```powershell
-npx hardhat run scripts/deploy.js --network localhost
+cmd /c npm run deploy:local
 ```
 
-You will see:
-```
-✅ CertificateRegistry deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
-> **Important:** If the printed address differs from `0x5FbDB2315678afecb367f032d93F642f64180aa3`, update `frontend/lib/contractConfig.ts` → `CONTRACT_ADDRESS`.
-
----
-
-## Step 6 — Add Hardhat network to MetaMask
-
-In MetaMask → **Add a network manually**:
-
-| Field | Value |
-|---|---|
-| Network Name | Hardhat Local |
-| RPC URL | `http://127.0.0.1:8545` |
-| Chain ID | `31337` |
-| Currency Symbol | `ETH` |
-
-Then **import a Hardhat test account** using one of the private keys printed when you ran `npx hardhat node` (they each have 10,000 test ETH).
-
----
-
-## Step 7 — Install & run the frontend
+Then run the frontend:
 
 ```powershell
 cd frontend
-npm install
-npm run dev
+cmd /c npm install
+cmd /c npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Deploy Contract To Sepolia
 
----
+### 1. Create root environment file
 
-## 🎮 Using the App
-
-| Page | URL | Who |
-|---|---|---|
-| Landing | `/` | Everyone |
-| Issue Certificate | `/issue` | Admin (contract owner) |
-| Verify Certificate | `/verify` | Everyone |
-| How It Works | `/how-it-works` | Everyone |
-
-### Issue a certificate
-1. Go to `/issue`
-2. Connect MetaMask (select the Hardhat account you imported — it must be the contract owner/deployer)
-3. Fill in the form and click **Issue Certificate**
-4. Approve the MetaMask transaction
-5. Copy the Certificate ID or transaction hash
-
-### Verify a certificate
-1. Go to `/verify`
-2. Paste the Certificate ID
-3. Click **Verify** — no wallet needed, it's a free read
-
----
-
-## 🔑 Environment Variables (Optional)
-
-Create `frontend/.env.local`:
+Copy `.env.example` to `.env` in the repo root and fill in real values:
 
 ```env
-NEXT_PUBLIC_CONTRACT_ADDRESS=0x5FbDB2315678afecb367f032d93F642f64180aa3
+SEPOLIA_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+PRIVATE_KEY=0xyour_wallet_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key_optional
 ```
 
-This overrides the default in `contractConfig.ts`.
+Notes:
 
----
+- `PRIVATE_KEY` must be the wallet that will own the contract.
+- Fund that wallet with Sepolia ETH before deploying.
+- `ETHERSCAN_API_KEY` is optional unless you want contract verification.
 
-## 🧪 Test Summary
+### 2. Deploy
 
-| Test | Description |
-|---|---|
-| Issue certificate | Emits event, increments counter |
-| Non-owner blocked | Reverts with OwnableUnauthorizedAccount |
-| Empty field | Reverts with EmptyField custom error |
-| Duplicate prevention | Reverts with CertificateAlreadyExists |
-| Data retrieval | Returns all fields correctly |
-| Non-existent ID | Reverts with CertificateNotFound |
-| Revocation | Sets isValid = false, emits event |
+```powershell
+cmd /c npm run deploy:sepolia
+```
 
----
+The script prints:
 
-## 🛠 Tech Stack
+- deployed contract address
+- Sepolia explorer link
+- exact `NEXT_PUBLIC_*` values for the frontend
 
-| Layer | Technology |
-|---|---|
-| Smart Contract | Solidity 0.8.24 |
-| Access Control | OpenZeppelin Ownable v5 |
-| Local Blockchain | Hardhat |
-| Web3 | ethers.js v6 |
-| Frontend | Next.js 14 (App Router) |
-| Styling | Tailwind CSS v3 |
-| Animations | Framer Motion v11 |
-| QR Code | qrcode.react |
-| Notifications | react-hot-toast |
-| Wallet | MetaMask |
+### 3. Optional: verify on Etherscan
+
+```powershell
+npx hardhat verify --network sepolia YOUR_CONTRACT_ADDRESS
+```
+
+## Deploy Frontend To Vercel
+
+### 1. Create frontend environment values
+
+Copy `frontend/.env.example` to `frontend/.env.local` for local testing, or add the same variables in Vercel:
+
+```env
+NEXT_PUBLIC_CONTRACT_ADDRESS=0xyour_deployed_contract_address
+NEXT_PUBLIC_CHAIN_ID=11155111
+NEXT_PUBLIC_NETWORK_NAME=Sepolia
+NEXT_PUBLIC_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+NEXT_PUBLIC_BLOCK_EXPLORER_URL=https://sepolia.etherscan.io
+NEXT_PUBLIC_CURRENCY_SYMBOL=ETH
+```
+
+### 2. Test the production build locally
+
+```powershell
+cd frontend
+cmd /c npm run build
+```
+
+### 3. Import into Vercel
+
+When creating the Vercel project:
+
+- set the Root Directory to `frontend`
+- framework preset should be detected as Next.js
+- add all `NEXT_PUBLIC_*` environment variables from above
+
+### 4. Deploy
+
+After deployment:
+
+- open the Vercel URL
+- connect MetaMask on Sepolia
+- issue a test certificate from the owner wallet
+- verify that certificate from `/verify`
+
+## Current Verification Status
+
+These checks passed locally:
+
+- `cmd /c npm test`
+- `cmd /c npm run build` inside `frontend/`
+
+## Useful Files
+
+- `hardhat.config.js`
+  Hardhat networks and `.env` loading
+- `scripts/deploy.js`
+  Deployment script for localhost and Sepolia
+- `frontend/lib/contractConfig.ts`
+  Frontend network and contract settings
+- `frontend/lib/useWallet.ts`
+  MetaMask connection and network switching logic
+- `frontend/lib/contract.ts`
+  Read/write contract helpers
